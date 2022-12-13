@@ -19,3 +19,8 @@ Configured to stream the worker node logs to CloudWatch Logs by default.
 - Enables aws-privateca-issuer module
 - Creates AWS Certificate Manager Private Certificate Authority, enables and activates it
 - Creates the CRDs to fetch tls.crt, tls.key and ca.crt , which will be available as Kubernetes Secret.
+
+## ALB + Shield
+
+The AWS Load Balancer Controller manages AWS Elastic Load Balancers for a Kubernetes cluster. 
+Enables AWS Shield Advanced for the Elastic Load Balancing load balancer.
