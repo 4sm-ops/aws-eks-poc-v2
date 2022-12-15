@@ -23,6 +23,8 @@ provider "kubectl" {
   token                  = data.aws_eks_cluster_auth.this.token
 }
 
+
+
 data "aws_eks_cluster_auth" "this" {
   name = module.eks_blueprints.eks_cluster_id
 }
@@ -31,6 +33,8 @@ data "aws_availability_zones" "available" {}
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 data "aws_partition" "current" {}
+
+
 
 locals {
   name      = basename(path.cwd)
@@ -126,10 +130,16 @@ module "eks_blueprints_kubernetes_addons" {
 
   enable_external_secrets = true
 
+    # Add-ons
+  enable_cert_manager            = true
+  enable_cert_manager_csi_driver = true
+  enable_aws_privateca_issuer    = true
+  aws_privateca_acmca_arn        = aws_acmpca_certificate_authority.example.arn
+
   tags = local.tags
 
   enable_aws_for_fluentbit = true
-  aws_for_fluentbit_irsa_policies = ["IAM Policies"] # Add list of additional policies to IRSA to enable access to Kinesis, OpenSearch etc.
+#   aws_for_fluentbit_irsa_policies = concat([aws_iam_policy.aws_for_fluent_bit.arn], var.irsa_policies) # Add list of additional policies to IRSA to enable access to Kinesis, OpenSearch etc.
   aws_for_fluentbit_cw_log_group_retention = 90
   aws_for_fluentbit_helm_config = {
     name                                      = "aws-for-fluent-bit"
@@ -151,13 +161,13 @@ module "eks_blueprints_kubernetes_addons" {
     ]
   }
 
-  enable_aws_load_balancer_controller = true
+enable_aws_load_balancer_controller = true
   # Optional
   aws_load_balancer_controller_helm_config = {
     name                       = "aws-load-balancer-controller"
     chart                      = "aws-load-balancer-controller"
     repository                 = "https://aws.github.io/eks-charts"
-    version                    = "1.3.1"
+    # version                    = "2.4.5"
     namespace                  = "kube-system"
 #    values = [templatefile("${path.module}/values.yaml", {})]
   }
@@ -212,8 +222,12 @@ resource "aws_acmpca_certificate_authority_certificate" "example" {
 # Using kubectl to workaround kubernetes provider issue https://github.com/hashicorp/terraform-provider-kubernetes/issues/1453
 resource "kubectl_manifest" "cluster_pca_issuer" {
   yaml_body = yamlencode({
-    apiVersion = "awspca.cert-manager.io/v1beta1"
-    kind       = "AWSPCAClusterIssuer"
+
+#    apiVersion = "cert-manager.io/v1"
+#    kind = "AWSPCAClusterIssuer"
+
+   apiVersion = "awspca.cert-manager.io/v1beta1"
+   kind       = "AWSPCAClusterIssuer"
 
     metadata = {
       name = module.eks_blueprints.eks_cluster_id
@@ -473,7 +487,7 @@ YAML
 }
 
 resource "aws_ssm_parameter" "secret_parameter" {
-  name = "/${local.name}/secret"
+  name = "/123/secret"
   type = "SecureString"
   value = jsonencode({
     username = "secretuser",
@@ -502,20 +516,20 @@ YAML
   depends_on = [kubectl_manifest.secretstore]
 }
 
-#---------------------------------------------------------------
-# Shield
-#---------------------------------------------------------------
+# #---------------------------------------------------------------
+# # Shield
+# #---------------------------------------------------------------
 
 resource "aws_eip" "opsfleeteip" {
   vpc = true
 }
 
 
-resource "aws_shield_protection" "opsfleetshield" {
-  name         = "opsfleetshield"
-  resource_arn = "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:eip-allocation/${aws_eip.opsfleeteip.id}"
+# resource "aws_shield_protection" "opsfleetshield" {
+#   name         = "opsfleetshield"
+#   resource_arn = "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:eip-allocation/${aws_eip.opsfleeteip.id}"
 
-  tags = {
-    Environment = "Dev"
-  }
-}
+#   tags = {
+#     Environment = "Dev"
+#   }
+# }

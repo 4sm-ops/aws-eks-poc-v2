@@ -428,3 +428,9 @@ variable "platform_teams" {
   type        = any
   default     = {}
 }
+
+variable "irsa_policies" {
+  description = "Additional IAM policies for a IAM role for service accounts"
+  type        = list(string)
+  default     = []
+}

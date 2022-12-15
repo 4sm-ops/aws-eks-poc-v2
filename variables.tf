@@ -9,3 +9,9 @@ variable "certificate_dns" {
   description = "CommonName used in the Certificate, usually DNS "
   default     = "example.com"
 }
+
+variable "irsa_policies" {
+  description = "Additional IAM policies for a IAM role for service accounts"
+  type        = list(string)
+  default     = []
+}
